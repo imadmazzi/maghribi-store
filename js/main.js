@@ -3,26 +3,23 @@
 // =====================================================
 
 // 1. DYNAMIC PRODUCTS LOAD FROM ADMIN (LOCAL STORAGE)
+// 1. DYNAMIC PRODUCTS LOAD FROM ADMIN (LOCAL STORAGE)
 function loadStoreProducts() {
   try {
-    // كيجرب يقرأ السلعة من كاع الاحتمالات ديال السميات اللي فـ LocalStorage
-    const s = localStorage.getItem('admin_products') || localStorage.getItem('maghribi_products');
+    // SINGLE SOURCE OF TRUTH: Only products added via the current Admin Dashboard
+    const s = localStorage.getItem('maghribi_products');
     
     if (s) {
       const parsed = JSON.parse(s);
-      // كيعرض غير السلعة اللي الحالة ديالها Active (true)
-      const activeProducts = parsed.filter(p => p.status === true || p.status === undefined);
-      
-      if (activeProducts.length > 0) {
-        return activeProducts;
-      }
+      // Filter strictly for Online status (status === true)
+      return parsed.filter(p => p.status === true);
     }
   } catch(e) {
-    console.error("Erreur lors du chargement des produits:", e);
+    console.error("Sync Error:", e);
   }
-  // مصفوفة خاوية باش ما تبانش السلعة القديمة اللي مابغيتيش
-  return []; 
+  return []; // Return empty if no products found or error
 }
+var PRODUCTS = loadStoreProducts();
 
 var PRODUCTS = loadStoreProducts();
 
@@ -30,9 +27,11 @@ var PRODUCTS = loadStoreProducts();
 function getAdminPhone() {
   try {
     const s = localStorage.getItem('admin_settings');
-    if(s) { return JSON.parse(s).phone || '212600000000'; }
+    if(s) { 
+        return JSON.parse(s).phone || '212600000000'; 
+    }
   } catch(e){}
-  return '212600000000'; // نمرتك الافتراضية هنا
+  return '212600000000';
 }
 var WA_PHONE = getAdminPhone();
 
@@ -89,14 +88,25 @@ var Cart = {
 // =====================================================
 function productCardHTML(p) {
   const fallbackImg = 'https://via.placeholder.com/300';
-  const mainImg = p.image || p.img || p.mainImage || fallbackImg;
+  // p.mainImage is primary source to match Admin Dashboard data
+  const mainImg = p.mainImage || p.image || p.img || fallbackImg;
   
-  const sizesHTML = p.sizes ? `<div class="prod-sizes">
-    ${p.sizes.map(s => `<span class="size-tag">${s.size || s}</span>`).join('')}
+  // Strict badge check to avoid "undefined" text
+  const badgeHTML = (p.badge && p.badge !== 'undefined' && p.badge !== 'null' && p.badge !== '') 
+    ? `<span class="product-badge ${p.badgeClass || 'badge-new'}">${p.badge}</span>` 
+    : '';
+
+  const sizesHTML = (p.sizes && p.sizes.length > 0) ? `<div class="prod-sizes">
+    ${p.sizes.map(s => {
+      const val = typeof s === 'object' ? (s.size || s.val) : s;
+      return `<span class="size-tag">${val}</span>`;
+    }).join('')}
   </div>` : '';
 
   return `
     <article class="product-card reveal" onclick="openProductModal('${p.id}')">
+      ${badgeHTML}
+      <button class="product-wishlist" onclick="event.stopPropagation(); showToast('Favori ajouté!')">♡</button>
       <div class="product-img-wrap">
         <img src="${mainImg}" alt="${p.name}" loading="lazy" onerror="this.src='${fallbackImg}'"/>
       </div>
@@ -105,6 +115,7 @@ function productCardHTML(p) {
         <h3>${p.name}</h3>
         <div class="product-price-row">
           <span class="prod-price">${p.price} MAD</span>
+          ${p.oldPrice ? `<span style="text-decoration:line-through; font-size:0.8rem; color:grey; margin-left:8px;">${p.oldPrice} MAD</span>` : ''}
         </div>
         ${sizesHTML}
         <div class="product-card-btns">
@@ -121,11 +132,15 @@ function renderProducts() {
   if (PRODUCTS.length === 0) {
     const emptyMsg = '<div style="grid-column:1/-1; text-align:center; padding:50px; color:grey;">Aucun produit trouvé dans votre Admin.</div>';
     if (g1) g1.innerHTML = emptyMsg;
+    if (g2) g2.innerHTML = emptyMsg;
     return;
   }
 
   if (g1) g1.innerHTML = PRODUCTS.map(productCardHTML).join('');
   if (g2) g2.innerHTML = [...PRODUCTS].reverse().map(productCardHTML).join('');
+  
+  // Re-run reveal 
+  if (typeof initReveal === 'function') setTimeout(initReveal, 50);
 }
 
 // =====================================================
@@ -170,11 +185,65 @@ function renderCart() {
 }
 
 // =====================================================
+// RESTORED UI FEATURES (Slider, Search, Reveal)
+// =====================================================
+let currentSlide = 0;
+let slideTimer = null;
+function goToSlide(n) {
+  const track = document.getElementById('slider-track');
+  const dots = document.querySelectorAll('.slider-dot');
+  if (!track) return;
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  currentSlide = ((n % total) + total) % total;
+  track.style.transform = `translateX(-${currentSlide * 100}%)`;
+  dots.forEach((d, i) => d.classList.toggle('active', i === currentSlide));
+}
+function nextSlide() { goToSlide(currentSlide + 1); }
+function prevSlide() { goToSlide(currentSlide - 1); }
+function resetSlider() { clearInterval(slideTimer); slideTimer = setInterval(nextSlide, 4000); }
+
+function initSlider() {
+  const prevBtn = document.getElementById('slider-prev');
+  const nextBtn = document.getElementById('slider-next');
+  if (prevBtn) prevBtn.onclick = () => { prevSlide(); resetSlider(); };
+  if (nextBtn) nextBtn.onclick = () => { nextSlide(); resetSlider(); };
+  document.querySelectorAll('.slider-dot').forEach(dot => {
+    dot.onclick = () => { goToSlide(parseInt(dot.dataset.slide)); resetSlider(); };
+  });
+  resetSlider();
+}
+
+function initReveal() {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal, .reveal-left, .reveal-right').forEach(el => observer.observe(el));
+}
+
+function liveSearch(q) {
+  const d = document.getElementById('search-dropdown');
+  q = q.trim().toLowerCase();
+  if(!q) { if(d) d.style.display = 'none'; return; }
+  const matches = PRODUCTS.filter(p => p.name.toLowerCase().includes(q));
+  if(d) {
+    d.innerHTML = matches.slice(0, 5).map(m => `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px;cursor:pointer;border-bottom:1px solid #f0f0f0;" onclick="openProductModal('${m.id}')">
+        <img src="${m.mainImage || m.image || m.img || ''}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;">
+        <div><div style="font-weight:600;font-size:.85rem;">${m.name}</div><div style="font-size:.75rem;">${m.price} MAD</div></div>
+      </div>`).join('');
+    d.style.display = matches.length ? 'block' : 'none';
+  }
+}
+
+// =====================================================
 // INITIALIZATION
 // =====================================================
 document.addEventListener('DOMContentLoaded', () => {
   renderProducts();
   Cart.updateBadge();
+  initSlider();
+  initReveal();
   
   // Mobile Menu
   const mbBtn = document.getElementById('mob-menu-btn');
@@ -182,10 +251,9 @@ document.addEventListener('DOMContentLoaded', () => {
   if(mbBtn && drawer) mbBtn.onclick = () => drawer.classList.toggle('open');
 });
 
-// --- Modal Logic simplified ---
+// --- Modal Logic ---
 function openProductModal(id) {
   const p = PRODUCTS.find(x => x.id == id);
   if(!p) return;
-  // هنا تقدر تزيد كود الـ Modal اللي كيعرض التصاور الكبار
-  alert("Détails de: " + p.name + "\nPrix: " + p.price + " MAD");
+  alert("🛍️ Product: " + p.name + "\n💰 Price: " + p.price + " MAD\n🚚 Delivery everywhere in Morocco!");
 }
