@@ -12,17 +12,27 @@ function loadStoreProducts() {
       if (parsed.length > 0) return parsed;
     }
   } catch(e) {}
-  // Default fallback
-  return [{
-    id: 'maillot-rouge', name: 'Maillot Classic Rouge', price: 299, oldPrice: 399,
-    image: 'images/jersey_red.png', badge: 'PROMO', badgeClass: 'badge-promo', category: 'Maillots',
-    sizes: ['S','M','L','XL','XXL'], rating: 5, reviews: 154
-  },
-  {
-    id: 'maillot-vert', name: 'Maillot Away Vert', price: 299, oldPrice: 399,
-    image: 'images/jersey_green.png', badge: 'SÉLECTION', badgeClass: 'badge-new', category: 'Maillots',
-    sizes: ['M','L','XL'], rating: 4, reviews: 89
-  }];
+  // Default fallback for data consistency
+  return [
+    {
+      id: 'maillot-classic',
+      name: 'Maillot Classic Rouge',
+      price: 299,
+      oldPrice: 399,
+      image: 'images/jersey_red.png',
+      sizes: ['S', 'M', 'L', 'XL'],
+      category: 'Maillots'
+    },
+    {
+      id: 'maillot-away',
+      name: 'Maillot Away Vert',
+      price: 299,
+      oldPrice: 399,
+      image: 'images/jersey_green.png',
+      sizes: ['M', 'L', 'XL'],
+      category: 'Maillots'
+    }
+  ];
 }
 var PRODUCTS = loadStoreProducts();
 
@@ -193,43 +203,37 @@ function initReveal() {
 // PRODUCT CARDS RENDER
 // =====================================================
 function productCardHTML(p) {
-  let mainImg = 'https://placehold.co/400x400/0D3B38/C9A227?text=Produit';
-  let secondImg = null;
+  const fallbackImg = 'https://via.placeholder.com/300';
+  const mainImg = p.image || p.img || fallbackImg;
   
-  if(p.images && p.images.length > 0) {
-    mainImg = p.mainImage || p.images[0];
-    if(p.images.length > 1) secondImg = p.images[1];
-  } else if(p.image || p.img) {
-    mainImg = p.image || p.img;
-  }
+  // Render Sizes Check
+  const sizesHTML = p.sizes ? `<div class="prod-sizes">
+    ${p.sizes.map(s => `<span class="size-tag">${s.size || s}</span>`).join('')}
+  </div>` : '';
 
   return `
     <article class="product-card reveal" onclick="openProductModal('${p.id}')" tabindex="0" aria-label="${p.name}">
       ${p.badge ? `<span class="product-badge ${p.badgeClass}">${p.badge}</span>` : ''}
       <button class="product-wishlist" onclick="event.stopPropagation(); addToWishlist('${p.id}')" title="Ajouter aux favoris" aria-label="Favori">♡</button>
       <div class="product-img-wrap">
-        <img src="${mainImg}" alt="${p.name}" loading="lazy" onerror="this.onerror=null;this.src='https://placehold.co/400x400/0D3B38/C9A227?text=Image+non+disponible';"/>
-        ${secondImg ? `<img src="${secondImg}" alt="${p.name} alternate" class="card-img-back" loading="lazy" onerror="this.style.display='none'">` : ''}
+        <img src="${mainImg}" alt="${p.name}" loading="lazy" onerror="this.onerror=null;this.src='${fallbackImg}';"/>
       </div>
       <div class="product-info">
-        <div class="prod-category">${p.category}</div>
+        <div class="prod-category">${p.category || 'Collection'}</div>
         <h3>${p.name}</h3>
         <div class="product-price-row">
           <div>
             <span class="prod-price">${p.price} <span style="font-size:.72em;font-family:var(--font-arabic)">د.م.</span></span>
             ${p.oldPrice ? `<span class="prod-price-old">${p.oldPrice} د.م.</span>` : ''}
           </div>
-          <div class="prod-stars">${starsHTML(p.rating)}</div>
         </div>
-        ${p.sizes && p.sizes.length > 0 ? `<div class="prod-sizes">
-          ${p.sizes.map(s => `<span class="size-tag ${+s.stock<=0?'out-of-stock':''}">${s.size}</span>`).join('')}
-        </div>` : ''}
+        ${sizesHTML}
         <div class="product-card-btns">
           <button class="btn-ajouter" onclick="event.stopPropagation(); openProductModal('${p.id}')">
             🛒 Ajouter
           </button>
           <button class="btn-whatsapp" onclick="event.stopPropagation(); openProductModal('${p.id}')">
-            💬 <span class="wa-text">WhatsApp</span>
+            💬 <span class="wa-text">WA</span>
           </button>
         </div>
       </div>
