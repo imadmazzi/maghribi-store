@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin — Maghribi Store</title>
+<link rel="stylesheet" href="admin.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="app">
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sb-logo">
+    <div class="star">★</div>
+    <div><div class="name"><span>Maghribi</span> Store</div><div class="sub">Administration</div></div>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-section">Principal</div>
+    <div class="nav-item active" data-page="dashboard" onclick="showPage('dashboard')"><span class="ico">📊</span> Tableau de Bord</div>
+    <div class="nav-item" data-page="products" onclick="showPage('products')"><span class="ico">📦</span> Produits</div>
+    <div class="nav-item" data-page="orders" onclick="showPage('orders')"><span class="ico">🛒</span> Commandes</div>
+    <div class="sb-section">CRM</div>
+    <div class="nav-item" data-page="clients" onclick="showPage('clients')"><span class="ico">👥</span> Clients</div>
+    <div class="nav-item" data-page="whatsapp" onclick="showPage('whatsapp')"><span class="ico">💬</span> WhatsApp</div>
+    <div class="sb-section">Analyse</div>
+    <div class="nav-item" data-page="stats" onclick="showPage('stats')"><span class="ico">📈</span> Statistiques</div>
+    <div class="sb-section">Système</div>
+    <div class="nav-item" data-page="settings" onclick="showPage('settings')"><span class="ico">⚙️</span> Paramètres</div>
+  </nav>
+  <div class="sb-footer">© 2026 Maghribi Store 🇲🇦</div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="zellige-strip"></div>
+  <div class="top-bar">
+    <button class="ham-btn" onclick="toggleSidebar()">☰</button>
+    <span id="tb-title" class="tb-title">Tableau de Bord</span>
+    <div class="tb-right">
+      <span class="tb-badge">🇲🇦 Admin</span>
+      <a href="../index.html" target="_blank" class="btn btn-outline btn-sm">🌐 Voir le site</a>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- PAGE: DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card"><div class="sc-icon">💰</div><div class="sc-label">Ventes du jour</div><div class="sc-val" id="stat-sales">0 MAD</div><div class="sc-change up">↑ +12% vs hier</div></div>
+        <div class="stat-card"><div class="sc-icon">🛒</div><div class="sc-label">Commandes aujourd'hui</div><div class="sc-val" id="stat-orders">0</div><div class="sc-change up">↑ +3 nouvelles</div></div>
+        <div class="stat-card"><div class="sc-icon">📦</div><div class="sc-label">Produits en stock</div><div class="sc-val" id="stat-stock">0</div><div class="sc-change down">↓ -5 depuis lundi</div></div>
+        <div class="stat-card"><div class="sc-icon">👥</div><div class="sc-label">Clients inscrits</div><div class="sc-val" id="stat-clients">0</div><div class="sc-change up">↑ +2 cette semaine</div></div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><h3>📈 Ventes — 7 derniers jours</h3></div>
+        <div class="card-body"><div class="chart-wrap"><canvas id="salesChart"></canvas></div></div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><h3>🛒 Commandes récentes</h3><div class="hd-actions"><button class="btn btn-gold btn-sm" onclick="showPage('orders')">Voir tout</button></div></div>
+        <div class="card-body">
+          <div class="tbl-wrap"><table>
+            <thead><tr><th>N° Commande</th><th>Client</th><th>Produit</th><th>Total</th><th>Statut</th><th>Action</th></tr></thead>
+            <tbody id="recent-orders-body"></tbody>
+          </table></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: PRODUCTS -->
+    <div class="page" id="page-products">
+      <div class="search-bar">
+        <input class="inp inp-search" placeholder="🔍 Rechercher un produit..." oninput="renderProducts(this.value)" id="products-search">
+        <button class="btn btn-gold" onclick="openAddProduct()">＋ Ajouter Produit</button>
+      </div>
+      <div class="card">
+        <div class="card-hd"><h3>📦 Liste des Produits</h3><div id="prod-count" class="hd-actions" style="color:rgba(255,255,255,.6);font-size:.85rem"></div></div>
+        <div class="card-body">
+          <div class="tbl-wrap"><table>
+            <thead><tr><th>Image</th><th>Nom</th><th>Catégorie</th><th>Prix MAD</th><th>Stock</th><th>Statut</th><th>Actions</th></tr></thead>
+            <tbody id="products-body"></tbody>
+          </table></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: ORDERS -->
+    <div class="page" id="page-orders">
+      <div class="search-bar">
+        <input class="inp inp-search" id="orders-search" placeholder="🔍 Rechercher commande, client..." oninput="renderOrders()">
+        <button class="btn btn-teal" onclick="exportCSV()">⬇️ Export CSV</button>
+      </div>
+      <div class="filter-tabs">
+        <div class="ftab active" data-filter="all" onclick="renderOrders('all')">Toutes</div>
+        <div class="ftab" data-filter="en cours" onclick="renderOrders('en cours')">En cours</div>
+        <div class="ftab" data-filter="livré" onclick="renderOrders('livré')">Livrées</div>
+        <div class="ftab" data-filter="annulé" onclick="renderOrders('annulé')">Annulées</div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><h3>🛒 Toutes les Commandes</h3></div>
+        <div class="card-body">
+          <div class="tbl-wrap"><table>
+            <thead><tr><th>N° Cmd</th><th>Date</th><th>Client</th><th>Ville</th><th>Produit</th><th>Total MAD</th><th>Statut</th><th>Action</th></tr></thead>
+            <tbody id="orders-body"></tbody>
+          </table></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: CLIENTS -->
+    <div class="page" id="page-clients">
+      <div class="search-bar">
+        <input class="inp inp-search" id="clients-search" placeholder="🔍 Rechercher client, ville, téléphone..." oninput="renderClients(this.value)">
+      </div>
+      <div class="card">
+        <div class="card-hd"><h3>👥 Base Clients</h3></div>
+        <div class="card-body">
+          <div class="tbl-wrap"><table>
+            <thead><tr><th>Nom</th><th>Téléphone</th><th>Ville</th><th>Commandes</th><th>Total dépensé</th><th>Client depuis</th><th>Action</th></tr></thead>
+            <tbody id="clients-body"></tbody>
+          </table></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: WHATSAPP -->
+    <div class="page" id="page-whatsapp">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px">
+        <div><h2 style="font-family:var(--font-h);color:var(--teal)">💬 Messages WhatsApp</h2><p style="color:var(--grey);font-size:.85rem;margin-top:4px">Cliquez sur une conversation pour ouvrir WhatsApp</p></div>
+        <a href="https://web.whatsapp.com" target="_blank" class="btn btn-wa">💬 Ouvrir WhatsApp Business</a>
+      </div>
+      <div class="card">
+        <div class="card-hd"><h3>Conversations récentes</h3></div>
+        <div id="wa-conversations" class="wa-list"></div>
+      </div>
+    </div>
+
+    <!-- PAGE: STATS -->
+    <div class="page" id="page-stats">
+      <div class="stats-summary">
+        <div class="sum-card"><div class="val" id="stat-total-rev">—</div><div class="lbl">💰 Revenu total (livrées)</div></div>
+        <div class="sum-card"><div class="val" id="stat-top-city">—</div><div class="lbl">🏙️ Ville la plus active</div></div>
+        <div class="sum-card"><div class="val" id="stat-top-prod" style="font-size:1rem">—</div><div class="lbl">🏅 Meilleur produit</div></div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><h3>📊 Ventes par mois</h3></div>
+        <div class="card-body"><div class="chart-wrap chart-wrap-lg"><canvas id="monthlyChart"></canvas></div></div>
+      </div>
+      <div class="charts-grid">
+        <div class="card" style="margin-bottom:0">
+          <div class="card-hd"><h3>🥧 Ventes par catégorie</h3></div>
+          <div class="card-body"><div class="chart-wrap"><canvas id="pieChart"></canvas></div></div>
+        </div>
+        <div class="card" style="margin-bottom:0">
+          <div class="card-hd"><h3>📈 Nouveaux clients / semaine</h3></div>
+          <div class="card-body"><div class="chart-wrap"><canvas id="clientsChart"></canvas></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: SETTINGS -->
+    <div class="page" id="page-settings">
+      <div class="settings-section">
+        <h3>🏪 Informations du Magasin</h3>
+        <div class="form-row">
+          <div class="form-grp"><label>Nom du magasin</label><input class="inp" id="set-store" placeholder="Maghribi Store"></div>
+          <div class="form-grp"><label>Email</label><input class="inp" type="email" id="set-email" placeholder="contact@store.ma"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-grp"><label>Numéro WhatsApp (avec indicatif)</label><input class="inp" id="set-phone" placeholder="212600000000"></div>
+          <div class="form-grp"><label>Adresse</label><input class="inp" id="set-addr" placeholder="Casablanca, Maroc"></div>
+        </div>
+        <div class="form-grp"><label>Devise</label><input class="inp" value="MAD — الدرهم المغربي" disabled style="opacity:.6"></div>
+        <button class="btn btn-gold" onclick="saveSettings()">💾 Sauvegarder</button>
+      </div>
+      <div class="settings-section">
+        <h3>🎨 Apparence</h3>
+        <div class="form-grp">
+          <label>Mode d'affichage</label>
+          <div style="display:flex;gap:10px;margin-top:8px">
+            <button class="btn btn-teal btn-sm" onclick="toast('Mode sombre bientôt disponible!')">🌙 Mode Sombre</button>
+            <button class="btn btn-gold btn-sm" onclick="toast('Mode clair actif ✅')">☀️ Mode Clair (actuel)</button>
+          </div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3>⚠️ Zone Danger</h3>
+        <p style="color:var(--grey);font-size:.87rem;margin-bottom:14px">Réinitialiser toutes les données locales (produits, commandes, clients).</p>
+        <button class="btn btn-terra" onclick="resetData()">🔄 Réinitialiser les données</button>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /app -->
+
+<!-- MODAL: PRODUCT -->
+<div class="modal-overlay" id="modal-product" onclick="if(event.target===this)closeModal('modal-product')">
+  <div class="modal">
+    <div class="modal-hd">
+      <h3 id="modal-prod-title">Ajouter un Produit</h3>
+      <button class="modal-close" onclick="closeModal('modal-product')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="prod-id">
+      <div class="form-grp"><label>Nom du produit *</label><input class="inp" id="prod-name" placeholder="Ex: Atlas Lions Classic Rouge"></div>
+      <div class="form-grp"><label>Description</label><textarea class="inp" id="prod-desc" placeholder="Description du produit..."></textarea></div>
+      <div class="form-row">
+        <div class="form-grp"><label>Prix (MAD) *</label><input class="inp" type="number" id="prod-price" placeholder="299" min="0"></div>
+      </div>
+      
+      <!-- SIZES & STOCK -->
+      <div class="form-grp">
+        <label>Tailles disponibles et Stocks *</label>
+        <div id="size-toggles" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+          <!-- Toggles injected here -->
+        </div>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="custom-size-input" class="inp" style="max-width:120px;" placeholder="Ex: 38, Unique">
+          <button type="button" class="btn btn-outline" style="padding:10px 14px;" onclick="addCustomSize()">+ Ajouter taille personnalisée</button>
+        </div>
+        <div id="size-stocks-container" style="margin-top:15px; display:flex; flex-direction:column; gap:8px; max-height:200px; overflow-y:auto; padding-right:5px;">
+          <!-- Stock inputs injected here -->
+        </div>
+      </div>
+      <div class="form-grp">
+        <label>Photos du produit (Max 10)</label>
+        
+        <!-- Drag & Drop Zone -->
+        <div id="drop-zone" style="border:2px dashed var(--teal); border-radius:8px; padding:20px; text-align:center; cursor:pointer; background:var(--ivory); margin-bottom:10px; transition:all 0.3s ease;" onclick="document.getElementById('m-prod-img-file').click()" ondragover="event.preventDefault(); this.style.borderColor='var(--gold)'; this.style.background='rgba(201,162,39,0.1)';" ondragleave="this.style.borderColor='var(--teal)'; this.style.background='var(--ivory)';" ondrop="handleDrop(event)">
+          <div style="font-size:2.2rem; margin-bottom:8px;">📸</div>
+          <div style="color:var(--teal); font-weight:bold; font-size:1.1rem;">Glissez vos photos ici ou cliquez pour sélectionner</div>
+          <div style="color:var(--grey); font-size:0.85rem; margin-top:5px;">Formats supportés: JPG, PNG, WEBP (Max 2Mo par photo)</div>
+          <input type="file" id="m-prod-img-file" accept="image/*" multiple style="display:none;" onchange="handleMultipleImages(event.target.files)">
+        </div>
+        
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <div id="photo-counter" style="font-size:0.85rem;font-weight:bold;color:var(--grey)">0/10 photos ajoutées</div>
+        </div>
+        
+        <!-- Previews Grid -->
+        <div id="m-prod-img-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(90px, 1fr)); gap:10px; margin-top:5px;">
+          <!-- Previews injected via JS -->
+        </div>
+      </div>
+      <div class="form-grp"><label>Catégorie</label>
+        <select class="inp" id="prod-cat">
+          <option value="Classic">Classic</option>
+          <option value="Away">Away</option>
+          <option value="Premium">Premium</option>
+          <option value="Special">Special Edition</option>
+        </select>
+      </div>
+      <div class="form-grp">
+        <label>Statut</label>
+        <div class="toggle-wrap">
+          <label class="toggle"><input type="checkbox" id="prod-status" checked><span class="toggle-slider"></span></label>
+          <span style="font-size:.88rem;color:var(--grey)">Produit Actif</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn btn-outline" onclick="closeModal('modal-product')">Annuler</button>
+        <button class="btn btn-gold" onclick="saveProduct()">💾 Sauvegarder</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SIDE PANELS -->
+<div class="panel-overlay" id="panel-overlay" onclick="closePanel('panel-order');closePanel('panel-client')"></div>
+
+<div class="side-panel" id="panel-order">
+  <div class="panel-hd"><h3>🛒 Détail Commande</h3><button class="panel-close" onclick="closePanel('panel-order')">✕</button></div>
+  <div class="panel-body" id="panel-order-content"></div>
+</div>
+
+<div class="side-panel" id="panel-client">
+  <div class="panel-hd"><h3>👤 Profil Client</h3><button class="panel-close" onclick="closePanel('panel-client')">✕</button></div>
+  <div class="panel-body" id="panel-client-content"></div>
+</div>
+
+<script src="admin.js"></script>
+</body>
+</html>
