@@ -14,9 +14,14 @@ function loadStoreProducts() {
   } catch(e) {}
   // Default fallback
   return [{
-    id: 'ez-outlet', name: 'EZ Outlet — La Multiprise', price: 149, oldPrice: 199,
-    image: 'images/ez_outlet.png', badge: 'NOUVEAU', badgeClass: 'badge-new', category: 'Accessoires',
-    sizes: ['Standard'], rating: 5, reviews: 128
+    id: 'maillot-rouge', name: 'Maillot Classic Rouge', price: 299, oldPrice: 399,
+    image: 'images/jersey_red.png', badge: 'PROMO', badgeClass: 'badge-promo', category: 'Maillots',
+    sizes: ['S','M','L','XL','XXL'], rating: 5, reviews: 154
+  },
+  {
+    id: 'maillot-vert', name: 'Maillot Away Vert', price: 299, oldPrice: 399,
+    image: 'images/jersey_green.png', badge: 'SÉLECTION', badgeClass: 'badge-new', category: 'Maillots',
+    sizes: ['M','L','XL'], rating: 4, reviews: 89
   }];
 }
 var PRODUCTS = loadStoreProducts();
