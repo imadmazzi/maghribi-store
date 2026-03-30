@@ -227,6 +227,12 @@ document.addEventListener('DOMContentLoaded', () => {
   initSlider();
   initReveal();
   
+  // Set Global WhatsApp Links
+  ['wa-float', 'footer-wa-btn'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.href = buildWAURL();
+  });
+
   // Mobile Menu
   const mbBtn = document.getElementById('mob-menu-btn');
   const drawer = document.getElementById('mob-drawer');
