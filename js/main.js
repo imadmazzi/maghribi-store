@@ -2,43 +2,28 @@
 // MAGHRIBI STORE — MAIN.JS (OFFICIAL FIXED VERSION)
 // =====================================================
 
-// 1. DYNAMIC PRODUCTS LOAD FROM ADMIN (LOCAL STORAGE)
-// 1. DYNAMIC PRODUCTS LOAD FROM ADMIN (LOCAL STORAGE)
+// 1. GLOBAL CONFIG
+const WA_PHONE = '212684329935';
+
+// 2. DYNAMIC PRODUCTS LOAD FROM ADMIN (LOCAL STORAGE)
 function loadStoreProducts() {
   try {
-    // SINGLE SOURCE OF TRUTH: Only products added via the current Admin Dashboard
     const s = localStorage.getItem('maghribi_products');
-    
     if (s) {
       const parsed = JSON.parse(s);
-      // Filter strictly for Online status (status === true)
       return parsed.filter(p => p.status === true);
     }
   } catch(e) {
     console.error("Sync Error:", e);
   }
-  return []; // Return empty if no products found or error
+  return [];
 }
 var PRODUCTS = loadStoreProducts();
-
-var PRODUCTS = loadStoreProducts();
-
-// 2. WHATSAPP CONFIG FROM ADMIN
-function getAdminPhone() {
-  try {
-    const s = localStorage.getItem('admin_settings');
-    if(s) { 
-        return JSON.parse(s).phone || '212600000000'; 
-    }
-  } catch(e){}
-  return '212600000000';
-}
-var WA_PHONE = getAdminPhone();
 
 function buildWAURL(product = null) {
   let msg = '';
   if (product) {
-    msg = `Bonjour, je voudrais commander: ${product.name} - ${product.price} MAD. Livraison à: [Votre Ville]`;
+    msg = `Bonjour, je souhaite commander le produit: ${product.name}`;
   } else {
     msg = `Bonjour 👋 Je voudrais commander depuis *Maghribi Store* 🇲🇦`;
   }
@@ -88,10 +73,8 @@ var Cart = {
 // =====================================================
 function productCardHTML(p) {
   const fallbackImg = 'https://via.placeholder.com/300';
-  // p.mainImage is primary source to match Admin Dashboard data
   const mainImg = p.mainImage || p.image || p.img || fallbackImg;
   
-  // Strict badge check to avoid "undefined" text
   const badgeHTML = (p.badge && p.badge !== 'undefined' && p.badge !== 'null' && p.badge !== '') 
     ? `<span class="product-badge ${p.badgeClass || 'badge-new'}">${p.badge}</span>` 
     : '';
@@ -118,8 +101,10 @@ function productCardHTML(p) {
           ${p.oldPrice ? `<span style="text-decoration:line-through; font-size:0.8rem; color:grey; margin-left:8px;">${p.oldPrice} MAD</span>` : ''}
         </div>
         ${sizesHTML}
-        <div class="product-card-btns">
-          <button class="btn-ajouter">🛒 Détails</button>
+        <!-- All actions lead to size selection first -->
+        <div class="product-card-btns" style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          <button class="btn-ajouter" onclick="event.stopPropagation(); openProductModal('${p.id}')">🛒 Commander</button>
+          <button class="btn-whatsapp" onclick="event.stopPropagation(); openProductModal('${p.id}')">💬 WA</button>
         </div>
       </div>
     </article>`;
@@ -154,10 +139,7 @@ function showToast(msg) {
   setTimeout(() => t.remove(), 3000);
 }
 
-function openCart() {
-  const sidebar = document.getElementById('cart-sidebar');
-  if(sidebar) { sidebar.style.right = '0'; renderCart(); }
-}
+// REDUNDANT openCart removed. Using the one in index.html for overlay sync.
 
 function closeCart() {
   const sidebar = document.getElementById('cart-sidebar');
@@ -251,9 +233,170 @@ document.addEventListener('DOMContentLoaded', () => {
   if(mbBtn && drawer) mbBtn.onclick = () => drawer.classList.toggle('open');
 });
 
-// --- Modal Logic ---
+// =====================================================
+// MODAL & PURCHASE FLOW
+// =====================================================
+let currentProductObj = null;
+let currentSelectedSize = null;
+let currentQty = 1;
+
 function openProductModal(id) {
-  const p = PRODUCTS.find(x => x.id == id);
-  if(!p) return;
-  alert("🛍️ Product: " + p.name + "\n💰 Price: " + p.price + " MAD\n🚚 Delivery everywhere in Morocco!");
+  currentProductObj = PRODUCTS.find(x => x.id == id);
+  if(!currentProductObj) return;
+
+  currentSelectedSize = null;
+  currentQty = 1;
+
+  const m = document.getElementById('product-detail-modal');
+  const inner = m.querySelector('.modal');
+  const content = document.getElementById('product-modal-content');
+  
+  const images = (currentProductObj.images && currentProductObj.images.length > 0) ? currentProductObj.images : [currentProductObj.mainImage || currentProductObj.image || currentProductObj.img || 'https://via.placeholder.com/400'];
+
+  const sizesHTML = (currentProductObj.sizes && currentProductObj.sizes.length > 0) ? `
+    <div style="margin-bottom:20px;">
+      <div style="font-weight:bold; color:var(--teal); margin-bottom:10px;">Choisir votre taille:</div>
+      <div style="display:flex; flex-wrap:wrap; gap:10px;" id="modal-sizes-list">
+        ${currentProductObj.sizes.map(s => {
+          const val = typeof s === 'object' ? s.size : s;
+          return `<button class="size-btn-modal" onclick="selectModalSize('${val}')" data-size="${val}" style="padding:10px 15px; border:2px solid #ddd; background:white; border-radius:6px; cursor:pointer; font-weight:700; transition:0.2s;">${val}</button>`;
+        }).join('')}
+      </div>
+      <div id="size-err-msg" style="color:red; font-size:0.8rem; margin-top:5px; display:none;">⚠️ Veuillez séléctionner une taille.</div>
+    </div>
+  ` : '';
+
+  content.innerHTML = `
+    <!-- Gallery -->
+    <div style="flex:1; min-width:300px; padding:20px; background:#f9f9f9; display:flex; align-items:center; justify-content:center;">
+       <img src="${images[0]}" style="max-width:100%; max-height:400px; border-radius:8px; object-fit:contain;">
+    </div>
+    <!-- Info -->
+    <div style="flex:1; min-width:300px; padding:30px;">
+      <div style="font-size:0.8rem; color:var(--gold); font-weight:700; text-transform:uppercase; margin-bottom:5px;">${currentProductObj.category || 'Collection'}</div>
+      <h2 style="font-size:1.8rem; margin-bottom:15px; color:var(--teal); font-family:var(--font-head);">${currentProductObj.name}</h2>
+      <div style="font-size:1.5rem; font-weight:700; color:var(--gold); margin-bottom:20px;">${currentProductObj.price} MAD</div>
+      <p style="color:var(--grey); line-height:1.6; margin-bottom:25px;">${currentProductObj.desc || "Commandez maintenant et profitez d'une livraison rapide partout au Maroc 🇲🇦"}</p>
+      
+      ${sizesHTML}
+
+      <div style="margin-bottom:30px;">
+        <div style="font-weight:bold; color:var(--teal); margin-bottom:10px;">Quantité:</div>
+        <div style="display:flex; align-items:center; gap:15px;">
+           <button onclick="changeModalQty(-1)" style="width:40px; height:40px; border:1px solid #ddd; background:white; border-radius:6px; font-weight:bold; cursor:pointer;">-</button>
+           <span id="modal-qty-val" style="font-weight:bold; font-size:1.1rem; width:20px; text-align:center;">1</span>
+           <button onclick="changeModalQty(1)" style="width:40px; height:40px; border:1px solid #ddd; background:white; border-radius:6px; font-weight:bold; cursor:pointer;">+</button>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <button class="btn btn-gold" onclick="addToCartInModal()" style="width:100%; justify-content:center; padding:15px; font-size:1.1rem; border-radius:8px;">🛒 Ajouter au Panier</button>
+        <button class="btn btn-wa" onclick="whatsappInModal()" style="width:100%; justify-content:center; padding:15px; font-size:1.1rem; border-radius:8px; background:#25D366; border:none; color:white; font-weight:700; display:flex; gap:8px; align-items:center; cursor:pointer;">💬 Commander via WhatsApp</button>
+      </div>
+    </div>
+  `;
+
+  m.classList.add('open');
+  m.style.opacity = '1';
+  m.style.pointerEvents = 'auto';
+  inner.style.opacity = '1';
+  inner.style.pointerEvents = 'auto';
+}
+
+function closeProductModal() {
+  const m = document.getElementById('product-detail-modal');
+  const inner = m.querySelector('.modal');
+  m.classList.remove('open');
+  m.style.opacity = '0';
+  m.style.pointerEvents = 'none';
+  inner.style.opacity = '0';
+  inner.style.pointerEvents = 'none';
+}
+
+function selectModalSize(size) {
+  currentSelectedSize = size;
+  document.querySelectorAll('.size-btn-modal').forEach(btn => {
+    if(btn.dataset.size === size) {
+      btn.style.borderColor = 'var(--gold)';
+      btn.style.background = 'var(--ivory)';
+      btn.style.color = 'var(--teal)';
+    } else {
+      btn.style.borderColor = '#ddd';
+      btn.style.background = 'white';
+      btn.style.color = 'black';
+    }
+  });
+  document.getElementById('size-err-msg').style.display = 'none';
+}
+
+function changeModalQty(dir) {
+  currentQty += dir;
+  if(currentQty < 1) currentQty = 1;
+  document.getElementById('modal-qty-val').textContent = currentQty;
+}
+
+function addToCartInModal() {
+  console.log("Add to Cart clicked", currentProductObj);
+  if(currentProductObj.sizes && currentProductObj.sizes.length > 0 && !currentSelectedSize) {
+    alert("Veuillez choisir une taille !");
+    if(document.getElementById('size-err-msg')) document.getElementById('size-err-msg').style.display = 'block';
+    return;
+  }
+  
+  const item = {
+    id: currentProductObj.id,
+    name: currentProductObj.name,
+    price: currentProductObj.price,
+    image: currentProductObj.mainImage || currentProductObj.image || currentProductObj.img,
+    size: currentSelectedSize || 'Unique',
+    qty: currentQty || 1
+  };
+
+  Cart.add(item);
+  closeProductModal();
+  
+  // Call the global openCart (from index.html)
+  if(typeof openCart === 'function') {
+    openCart();
+  } else {
+    // Fallback if not found
+    const sidebar = document.getElementById('cart-sidebar');
+    if(sidebar) sidebar.style.right = '0';
+    renderCart();
+  }
+}
+
+function whatsappInModal() {
+  console.log("WhatsApp button clicked");
+  if(currentProductObj.sizes && currentProductObj.sizes.length > 0 && !currentSelectedSize) {
+    alert("Veuillez choisir une taille");
+    if(document.getElementById('size-err-msg')) document.getElementById('size-err-msg').style.display = 'block';
+    return;
+  }
+  
+  const productName = currentProductObj.name;
+  const selectedSize = currentSelectedSize || 'Unique';
+  const quantity = currentQty;
+  
+  const messageText = `Bonjour, je souhaite commander: ${productName} | Taille: ${selectedSize} | Quantité: ${quantity}`;
+  const whatsappUrl = `https://wa.me/${WA_PHONE}?text=${encodeURIComponent(messageText)}`;
+  
+  window.open(whatsappUrl, '_blank');
+}
+
+// 🛒 CART CHECKOUT TO WHATSAPP
+function checkoutCartWhatsApp() {
+  const items = Cart.getAll();
+  if(items.length === 0) {
+     alert("Votre panier est vide !");
+     return;
+  }
+  
+  let msg = "Bonjour Maghribi Store, je souhaite commander les produits suivants:\n\n";
+  items.forEach((it, idx) => {
+    msg += `✅ ${it.name} | Taille: ${it.size} | Qté: ${it.qty}\n`;
+  });
+  msg += `\n💰 *TOTAL COMMANDE: ${Cart.total()} MAD*\n\nExpédition: Partout au Maroc 🇲🇦`;
+  
+  window.open(`https://wa.me/${WA_PHONE}?text=${encodeURIComponent(msg)}`, '_blank');
 }
