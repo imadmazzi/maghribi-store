@@ -1246,6 +1246,87 @@ input,select,textarea,button{font-family:inherit}
   .mob-menu-links { display: flex; flex-direction: column; gap: 25px; }
   .mob-nav-link { font-size: 28px; font-family: var(--font-head); color: var(--gold); text-decoration: none; font-weight: 700; }
   .mob-menu-footer { margin-top: auto; padding-top: 30px; border-top: 1px solid rgba(255,255,255,0.1); }
+
+  /* CENTERING & RESPONSIVE FIXES (Step 1189) */
+  .hero-content, .slide-content {
+    text-align: center !important;
+    align-items: center !important;
+    justify-content: center !important;
+    left: 0 !important;
+    width: 100% !important;
+    padding: 0 20px !important;
+  }
+  .slide-btns {
+    justify-content: center !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+    padding: 0 15% !important;
+  }
+  .slide-btns .btn { width: 100% !important; }
+
+  .product-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 24px !important;
+    padding: 20px 0 !important;
+  }
+  .product-card {
+    width: 90% !important;
+    max-width: 350px !important;
+    margin: 0 auto !important;
+  }
+  .slider-container {
+    width: 100% !important;
+    overflow: hidden !important;
+  }
+  
+  .section-title { text-align: center !important; margin-bottom: 30px !important; }
+
+  .section-title { text-align: center !important; margin-bottom: 30px !important; }
+
+  /* MOBILE STATIC HERO (Step 1216) */
+  .hero-slider-wrapper, .hero-slider {
+    overflow: hidden !important;
+    touch-action: none !important; /* Disable Swipe */
+    min-height: 480px !important;
+    height: auto !important;
+  }
+  .slider-track {
+    display: block !important;
+    transform: none !important; /* Force static */
+  }
+  .slide:not(:first-child) {
+    display: none !important; /* Only Show 1st Slide */
+  }
+  .slider-arrow, .slider-dots {
+    display: none !important; /* Hide navigation */
+  }
+  .slide {
+    width: 100% !important;
+    min-width: 100% !important;
+    padding: 40px 15px !important;
+    text-align: center !important;
+  }
+  .slide-inner {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 20px !important;
+  }
+  .slide-img {
+    order: -1 !important; 
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  .slide-img img {
+    height: 250px !important;
+    width: 100% !important;
+    object-fit: cover !important;
+    border-radius: 12px !important;
+  }
+  .slide-content h2 { font-size: 1.8rem !important; }
 }
 
 /* Cleanup: Hide mobile only parts on desktop */
